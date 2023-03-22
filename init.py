@@ -1,4 +1,4 @@
-# This file should run before index.py, because it create database file, if we dont have database file, index.py will not work for sure
+# This file should run before index.py, because it creates database file, if we dont have database file, index.py will not work for sure
 
 import sqlite3
 
