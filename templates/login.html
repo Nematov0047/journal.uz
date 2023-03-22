@@ -1,0 +1,16 @@
+{% extends 'layout1.html' %}
+{% block content %}
+<form action="{{url_for('login_page')}}" method="post">
+  {{form.hidden_tag()}}
+  <div class="mb-3">
+    {{form.login(class='form-control',placeholder='Type Login')}}
+  </div>
+  <div class="mb-3">
+    {{form.password(class='form-control', placeholder='Type Password')}}
+  </div>
+  <div class="mb-3">
+    {{form.submit(class='btn btn-lg btn-primary')}}
+  </div>
+  <a href="{{url_for('register_page')}}">Create a new account</a>
+</form>
+{%endblock%}

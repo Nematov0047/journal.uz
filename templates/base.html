@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Journal.uz</title>
+    <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
+    <link href="{{url_for('static',filename='bootstrap.min.css')}}" rel="stylesheet">
+  </head>
+  <body>
+    {% include 'navbar.html' %}
+    <div class="container col-lg-9 col-md-12 col-sm-12 col-xs-12">
+        <div class="shadow-sm p-3 mb-5 bg-body-tertiary rounded">
+            {% for message in get_flashed_messages() %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {{message}}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {%block content%}
+            {%endblock%}
+        </div>
+    </div>
+    <script src="{{url_for('static',filename='bootstrap.bundle.min.js')}}"></script>
+  </body>
+</html>
