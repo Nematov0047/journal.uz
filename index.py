@@ -18,6 +18,53 @@ ckeditor = CKEditor(app)
 
 app.config['SECRET_KEY'] = '51efw@#651%$658efd-09+1'
 
+def generate_page(page_number):
+    page_number = int(page_number)
+    #start_page = (page_number*1)+((page_number-1)*5)
+    offset_page = (page_number*5)-5
+    i = get_user_info()
+    user_id = i[0]
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    #c.execute("SELECT *,rowid FROM diaries WHERE rowid BETWEEN "+str(start_page)+" AND "+str(end_page))
+    c.execute("SELECT *,rowid FROM diaries WHERE user_id="+str(user_id) + " LIMIT 5 OFFSET " + str(offset_page))
+    results = c.fetchall()
+    conn.commit()
+    conn.close()
+    return results
+
+def generate_paging(page_number = 1):
+    page_number = int(page_number)
+    i = get_user_info()
+    user_id = i[0]
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM diaries WHERE user_id='"+str(user_id)+"'")
+    results = c.fetchall()
+    page = results[0][0]/5
+    if page > int(page):
+        page += 1
+    conn.commit()
+    conn.close()
+    output = ''
+    print('page number: ' + str(page_number))
+    if page_number == 1:
+        output += '<li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>'
+    else:
+        output += '<li class="page-item"><a class="page-link" href="/page/'+str(page_number-1)+'">Previous</a></li>'
+    index = 1
+    while index <= page:
+        if index == page_number:
+            output += '<li class="page-item active"><a class="page-link" href="/page/'+str(index)+'">'+str(index)+'</a></li>'
+        else:
+            output += '<li class="page-item"><a class="page-link" href="/page/'+str(index)+'">'+str(index)+'</a></li>'
+        index += 1
+    if page_number == page:
+        output += '<li class="page-item disabled"><a class="page-link" href="#">Next</a></li>'
+    else:
+        output += '<li class="page-item"><a class="page-link" href="/page/'+str(page_number+1)+'">Next</a></li>'
+    return output
+
 def check_login(login):
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
@@ -116,11 +163,26 @@ class WriteForm(FlaskForm):
     submit = SubmitField('Submit')
 
 @app.route('/')
-def index_page():
+def index_page(page=1):
+    print('page is ' + str(page))
+    page = int(page)
     if check_auth():
         i = get_user_info()
         name = i[2]
-        return render_template('index.html', name=name, results=results())
+        pagination = generate_paging()
+        return render_template('index.html', name=name, results=generate_page(page), pagination=pagination)
+    else:
+        return redirect('/login')
+    
+@app.route('/page/<int:page>')
+def page_page(page=1):
+    print('page is ' + str(page))
+    page = int(page)
+    if check_auth():
+        i = get_user_info()
+        name = i[2]
+        pagination = generate_paging(page)
+        return render_template('index.html', name=name, results=generate_page(page), pagination=pagination)
     else:
         return redirect('/login')
 
@@ -192,7 +254,7 @@ def write_add_page():
             c = conn.cursor()
             date_today = date.today()
             description = ''
-            for word in remove_html(content).split(' ')[0:51]:
+            for word in remove_html(content).split()[0:51]:
                 description += word + ' '
             description += '...'
             c.execute("INSERT INTO diaries VALUES (?,?,?,?,?,?)",(user_id, journal_id, title, content, date_today, description))
