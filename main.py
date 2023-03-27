@@ -65,6 +65,53 @@ def generate_paging(page_number = 1):
         output += '<li class="page-item"><a class="page-link" href="/page/'+str(page_number+1)+'">Next</a></li>'
     return output
 
+# Class bilan yozib chiq
+def generate_paging_search(page_number, search):
+    page_number = int(page_number)
+    i = get_user_info()
+    user_id = i[0]
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM diaries WHERE user_id='"+str(user_id)+"' AND content LIKE '%"+str(search)+"%'")
+    results = c.fetchall()
+    page = results[0][0]/5
+    if page > int(page):
+        page += 1
+    conn.commit()
+    conn.close()
+    output = ''
+    print('page number: ' + str(page_number))
+    if page_number == 1:
+        output += '<li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>'
+    else:
+        output += '<li class="page-item"><a class="page-link" href="/search/'+str(page_number-1)+'">Previous</a></li>'
+    index = 1
+    while index <= page:
+        if index == page_number:
+            output += '<li class="page-item active"><a class="page-link" href="/search/'+str(index)+'">'+str(index)+'</a></li>'
+        else:
+            output += '<li class="page-item"><a class="page-link" href="/search/'+str(index)+'">'+str(index)+'</a></li>'
+        index += 1
+    if page_number == page:
+        output += '<li class="page-item disabled"><a class="page-link" href="#">Next</a></li>'
+    else:
+        output += '<li class="page-item"><a class="page-link" href="/search/'+str(page_number+1)+'">Next</a></li>'
+    return output
+
+def generate_page_search(page_number, search):
+    page_number = int(page_number)
+    offset_page = (page_number*5)-5
+    i = get_user_info()
+    user_id = i[0]
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute("SELECT *,rowid FROM diaries WHERE user_id="+str(user_id) + " AND content LIKE '%"+str(search)+"%' LIMIT 5 OFFSET " + str(offset_page))
+    results = c.fetchall()
+    conn.commit()
+    conn.close()
+    return results
+
+
 def check_login(login):
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
@@ -161,6 +208,10 @@ class WriteForm(FlaskForm):
     #content = TextAreaField('content', validators=[DataRequired()])
     content = CKEditorField('content', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+class SearchForm(FlaskForm):
+    search = StringField('q',validators=[DataRequired()])
+    submit = SubmitField('search')
 
 @app.route('/')
 def index_page(page=1):
@@ -287,6 +338,30 @@ def read_page(id):
             return redirect('/')
     else:
         redirect('/login')
+
+@app.route('/search', methods=['GET'])
+def search_page():
+    if check_auth():
+        i = get_user_info()
+        name = i[2]
+        search = request.args.get('q')
+        pagination = generate_paging_search(1,search)
+        resp = make_response(render_template('index.html', name=name, results=generate_page_search(1, search), pagination=pagination))
+        resp.set_cookie('search',search)
+        return resp
+    else:
+        return redirect('/login')
+
+@app.route('/search/<int:id>')
+def search_page_page(id):
+    if check_auth():
+        i = get_user_info()
+        name = i[2]
+        search = request.cookies.get('search')
+        pagination = generate_paging_search(id,search)
+        return render_template('index.html', name=name, results=generate_page_search(id, search), pagination=pagination)
+    else:
+        return redirect('/login')
 
 if __name__ == '__main__':
     app.run(debug=True)
